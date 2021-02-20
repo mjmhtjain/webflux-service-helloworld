@@ -9,6 +9,12 @@ For further reference, please consider the following sections:
 
 ### Helpful commands
 
+* Maven build and run commands
+```
+mvn clean package -DskipTests
+java -jar target/WebfluxService-0.0.1-SNAPSHOT.jar
+```
+
 * docker build and run using the default Dockerfile and docker-compose file
 ```
 docker build --tag webfluxbasicapi .

@@ -11,6 +11,6 @@ RUN mvn -f /home/app/pom.xml clean package
 #
 FROM openjdk:15-jdk-alpine
 COPY --from=build /home/app/target/WebfluxService-0.0.1-SNAPSHOT.jar /usr/local/lib/application.jar
-EXPOSE 8090
+EXPOSE 8080
 ENTRYPOINT exec java -jar /usr/local/lib/application.jar
 #ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar webfluxbasicapi.jar
