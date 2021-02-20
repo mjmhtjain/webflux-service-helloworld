@@ -30,3 +30,6 @@ build/
 
 ### VS Code ###
 .vscode/
+/maven-build.sh
+/maven-run.sh
+/azure-setup.sh

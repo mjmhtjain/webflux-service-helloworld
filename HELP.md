@@ -11,6 +11,9 @@ For further reference, please consider the following sections:
 
 * docker build and run using the default Dockerfile and docker-compose file
 ```
+docker build --tag webfluxbasicapi .
+docker run -p 8090:8090 webfluxbasicapi
+
 docker-compose up
 docker-compose down
 ```
