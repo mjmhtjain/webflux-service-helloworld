@@ -1,15 +1,8 @@
 #!/bin/bash
 set -e
 
-AZ_RESOURCE_GROUP=webfluxapiservice
-
-# destroy resource group.
-az group delete \
-    --name $AZ_RESOURCE_GROUP \
-    --yes
-
-AZ_RESOURCE_GROUP=$(az network watcher list | jq -r '.[0].resourceGroup')
-
-az group delete \
-    --name $AZ_RESOURCE_GROUP \
-    --yes
+for rgname in `az group list --query "[? contains(location,'east')][].{name:name}" -o tsv`;
+do
+echo Deleting ${rgname}
+az group delete -n ${rgname} --yes --no-wait
+done

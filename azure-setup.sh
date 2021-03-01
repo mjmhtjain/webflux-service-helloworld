@@ -49,10 +49,19 @@ az aks get-credentials --resource-group=$AZ_RESOURCE_GROUP \
   --name=$AZ_AKS
 
 # deploy image to AKS instance
-kubectl run $AKS_POD --image=$AZ_ACR.azurecr.io/$DOCKER_IMAGE_TAG:latest
-kubectl expose pod $AKS_POD --type=LoadBalancer --port=80 --target-port=8080
+kubectl run $AKS_POD \
+  --image=$AZ_ACR.azurecr.io/$DOCKER_IMAGE_TAG:latest \
+  --force
+
+kubectl expose pod $AKS_POD \
+  --type=LoadBalancer \
+  --port=80 \
+  --target-port=8080
+
 kubectl get services -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}'
 
+az aks show --name $AZ_AKS --resource-group $AZ_RESOURCE_GROUP
+
 # AKS web interface
-az aks browse --resource-group=$AZ_RESOURCE_GROUP \
-  --name=$AZ_AKS
+#az aks browse --resource-group=$AZ_RESOURCE_GROUP \
+#  --name=$AZ_AKS
