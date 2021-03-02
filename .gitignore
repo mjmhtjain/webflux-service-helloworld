@@ -32,3 +32,4 @@ build/
 .vscode/
 /maven-build.sh
 /maven-run.sh
+/testing/

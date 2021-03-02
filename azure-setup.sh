@@ -4,6 +4,7 @@ set -e
 AZ_RESOURCE_GROUP=webfluxapiservice
 AZ_LOCATION=eastus
 AZ_ACR=webfluxapiserviceregistry
+ACR_LOGIN_SERVER=webfluxapiserviceregistry
 AZ_ACR_PASSWORD=password
 DOCKER_IMAGE_TAG=webfluxbasicapi
 AZ_AKS=webfluxapiservice-akscluster
@@ -23,45 +24,58 @@ az acr create --resource-group $AZ_RESOURCE_GROUP \
   --sku Basic \
   --admin-enabled true
 
+ACR_LOGIN_SERVER=$(az acr list \
+  --resource-group $AZ_RESOURCE_GROUP \
+  | jq -r '.[0].loginServer')
+
 # login to registry
-AZ_ACR_PASSWORD=$(az acr credential show --resource-group $AZ_RESOURCE_GROUP \
---name $AZ_ACR | jq -r '.passwords[0].value')
+AZ_ACR_PASSWORD=$(az acr credential show \
+  --resource-group $AZ_RESOURCE_GROUP \
+  --name $AZ_ACR | jq -r '.passwords[0].value')
 
 # build docker image
 docker build --tag $DOCKER_IMAGE_TAG .
-docker tag $DOCKER_IMAGE_TAG $AZ_ACR.azurecr.io/$DOCKER_IMAGE_TAG:latest
+docker tag $DOCKER_IMAGE_TAG $ACR_LOGIN_SERVER/$DOCKER_IMAGE_TAG:latest
 
 # push image to ACR
-docker login $AZ_ACR.azurecr.io --username $AZ_ACR --password $AZ_ACR_PASSWORD
-docker push $AZ_ACR.azurecr.io/$DOCKER_IMAGE_TAG:latest
+echo $AZ_ACR_PASSWORD | docker login $ACR_LOGIN_SERVER \
+  --username $AZ_ACR \
+  --password-stdin
+
+docker push $ACR_LOGIN_SERVER/$DOCKER_IMAGE_TAG:latest
 
 # show repo list of images
-az acr repository list -n $AZ_ACR
+# az acr repository list -n $AZ_ACR
 
 # create AKS cluster
-az aks create --resource-group=$AZ_RESOURCE_GROUP \
+az aks create \
+  --resource-group=$AZ_RESOURCE_GROUP \
   --name=$AZ_AKS \
+  --enable-cluster-autoscaler \
+  --min-count 1 \
+  --max-count 5 \
   --attach-acr $AZ_ACR \
   --dns-name-prefix=$AZ_DNS_PREFIX \
   --generate-ssh-keys
 
-az aks get-credentials --resource-group=$AZ_RESOURCE_GROUP \
+az aks get-credentials \
+  --resource-group=$AZ_RESOURCE_GROUP \
   --name=$AZ_AKS
 
 # deploy image to AKS instance
-kubectl run $AKS_POD \
-  --image=$AZ_ACR.azurecr.io/$DOCKER_IMAGE_TAG:latest \
-  --force
+# kubectl get services -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}'
 
-kubectl expose pod $AKS_POD \
-  --type=LoadBalancer \
-  --port=80 \
-  --target-port=8080
+kubectl apply -f azure-aks-deployment.yaml
 
-kubectl get services -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}'
+kubectl get services --watch
 
-az aks show --name $AZ_AKS --resource-group $AZ_RESOURCE_GROUP
+# az aks scale --resource-group $AZ_RESOURCE_GROUP --name $AZ_AKS --node-count 3
 
-# AKS web interface
-#az aks browse --resource-group=$AZ_RESOURCE_GROUP \
-#  --name=$AZ_AKS
+# az aks show --name $AZ_AKS --resource-group $AZ_RESOURCE_GROUP
+
+az aks update \
+  --resource-group $AZ_RESOURCE_GROUP \
+  --name $AZ_AKS \
+  --enable-cluster-autoscaler \
+  --min-count 1 \
+  --max-count 5
