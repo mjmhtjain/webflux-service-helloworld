@@ -51,16 +51,19 @@ docker push $ACR_LOGIN_SERVER/$DOCKER_IMAGE_TAG:latest
 az aks create \
   --resource-group=$AZ_RESOURCE_GROUP \
   --name=$AZ_AKS \
+  --vm-set-type VirtualMachineScaleSets \
   --enable-cluster-autoscaler \
-  --min-count 1 \
+  --min-count 3 \
   --max-count 5 \
   --attach-acr $AZ_ACR \
   --dns-name-prefix=$AZ_DNS_PREFIX \
-  --generate-ssh-keys
+  --generate-ssh-keys \
+  --load-balancer-sku standard
 
 az aks get-credentials \
   --resource-group=$AZ_RESOURCE_GROUP \
-  --name=$AZ_AKS
+  --name=$AZ_AKS \
+  --overwrite-existing
 
 # deploy image to AKS instance
 # kubectl get services -o=jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}'
@@ -72,10 +75,3 @@ kubectl get services --watch
 # az aks scale --resource-group $AZ_RESOURCE_GROUP --name $AZ_AKS --node-count 3
 
 # az aks show --name $AZ_AKS --resource-group $AZ_RESOURCE_GROUP
-
-az aks update \
-  --resource-group $AZ_RESOURCE_GROUP \
-  --name $AZ_AKS \
-  --enable-cluster-autoscaler \
-  --min-count 1 \
-  --max-count 5
